@@ -1,6 +1,8 @@
 ﻿using BepInEx;
+using BepInEx.Harmony;
 using BepInEx.Logging;
 using HarmonyLib;
+using no00ob.Mod.LethalCompany.ItemAdditions.Patches;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,6 +21,8 @@ namespace no00ob.Mod.LethalCompany.ItemAdditions
 
         internal ManualLogSource logger;
 
+        public bool minimapOn;
+
         private void Awake()
         {
             if (Instance == null)
@@ -29,36 +33,10 @@ namespace no00ob.Mod.LethalCompany.ItemAdditions
             logger = BepInEx.Logging.Logger.CreateLogSource(PLUGIN_GUID);
 
             logger.LogInfo($"Plugin {PLUGIN_GUID} is loaded!");
-        }
 
-        [HarmonyPatch(typeof(StartOfRound), nameof(StartOfRound.openingDoorsSequence))]
-        [HarmonyPostfix]
-        static void openingDoorsSequencePatch()
-        {
-            HUDManager.Instance.AddTextToChatOnServer("Minimap Test");
-
-            GameObject rawImageObject = new GameObject("minimap_display");
-            RawImage rawImage = rawImageObject.AddComponent<RawImage>();
-
-            GameObject parentObject = GameObject.Find("IngamePlayerHUD");
-
-            rawImageObject.transform.SetParent(parentObject.transform.parent, false);
-
-            RenderTexture rTex = GameNetworkManager.Instance.localPlayerController.gameplayCamera.targetTexture;
-
-            Instance.logger.LogDebug($"RenderTexture {rTex} {rTex.name} assigned to {GameNetworkManager.Instance.localPlayerController.playerUsername}!");
-
-            if (rTex != null )
-            {
-                rawImage.texture = rTex;
-            }       
-
-            rawImage.rectTransform.anchorMax = new Vector2(1f, 0.5f);
-            rawImage.rectTransform.anchorMin = new Vector2(1f, 0.5f);
-            rawImage.rectTransform.pivot = new Vector2(1f, 0.5f);
-            rawImage.rectTransform.anchoredPosition3D = Vector3.zero;
-
-            rawImage.rectTransform.sizeDelta = new Vector2(Mathf.RoundToInt(Screen.width * 0.25f), Mathf.RoundToInt(Screen.height * 0.25f));
+            harmony.PatchAll(typeof(ItemAdditionsMod));
+            harmony.PatchAll(typeof(StartOfRoundPatch));
+            harmony.PatchAll(typeof(ManualCameraRendererPatch));
         }
     }
 }
